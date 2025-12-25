@@ -2,7 +2,7 @@
 
 ## Status
 
-Proposed | Accepted | Deprecated | Superseded by [ADR-NNNN](NNNN-title.md)
+Proposed | Accepted | Deprecated | Superseded by ADR-NNNN
 
 ## Date
 

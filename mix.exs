@@ -53,7 +53,23 @@ defmodule Chatterbex.MixProject do
   defp docs do
     [
       main: "Chatterbex",
-      extras: ["README.md"]
+      logo: "chatterbex_logo.png",
+      extras: [
+        "README.md",
+        "LICENSE",
+        "examples/README.md",
+        "docs/adr/README.md",
+        "docs/adr/template.md",
+        "docs/adr/0001-erlang-ports-for-python-interop.md",
+        "docs/adr/0002-genserver-per-model-instance.md",
+        "docs/adr/0003-json-base64-ipc-protocol.md",
+        "docs/adr/0004-mix-task-for-python-setup.md",
+        "docs/adr/0005-apple-silicon-mps-support.md"
+      ],
+      groups_for_extras: [
+        Examples: ~r/examples\//,
+        "Architecture Decisions": ~r/docs\/adr\//
+      ]
     ]
   end
 end

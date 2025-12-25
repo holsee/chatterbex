@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="chatterbex_logo.png" alt="Chatterbex Logo" width="400">
+  <img src="chatterbex_logo_text.png" alt="Chatterbex Logo" width="400">
 </p>
 
 # Chatterbex
@@ -173,7 +173,7 @@ Chatterbex uses Erlang ports to communicate with a Python process running the Ch
 
 ## Examples
 
-See the [`examples/`](examples/) directory for runnable scripts:
+See the [examples](examples/README.md) directory for runnable scripts:
 
 - **[hello_world.exs](examples/hello_world.exs)** - Basic text-to-speech
 - **[voice_cloning.exs](examples/voice_cloning.exs)** - Clone a voice from reference audio
@@ -188,7 +188,7 @@ mix run examples/multilingual.exs --text "Bonjour!" --language fr
 ## Documentation
 
 - [Examples README](examples/README.md) - Detailed usage for all examples
-- [Architecture Decision Records](docs/adr/) - Design decisions and rationale
+- [Architecture Decision Records](docs/adr/README.md) - Design decisions and rationale
 
 ## License
 
