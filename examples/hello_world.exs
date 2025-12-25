@@ -31,6 +31,9 @@ defmodule HelloWorld do
     IO.puts("Starting Chatterbex with #{model} model on #{device}...")
     {:ok, pid} = Chatterbex.start_link(model: model, device: device)
 
+    IO.puts("Loading model (this may take a minute on first run)...")
+    :ok = Chatterbex.await_ready(pid)
+
     IO.puts("Generating speech: \"#{text}\"")
     {:ok, audio} = Chatterbex.generate(pid, text)
 

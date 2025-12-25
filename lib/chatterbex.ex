@@ -13,6 +13,9 @@ defmodule Chatterbex do
       # Start a model server
       {:ok, pid} = Chatterbex.start_link(model: :turbo)
 
+      # Wait for model to load (30-60s on first run)
+      :ok = Chatterbex.await_ready(pid)
+
       # Generate speech
       {:ok, audio} = Chatterbex.generate(pid, "Hello, world!")
 
@@ -124,6 +127,76 @@ defmodule Chatterbex do
   """
   @spec sample_rate(model()) :: pos_integer()
   def sample_rate(_model), do: 24_000
+
+  @doc """
+  Checks if the model server is ready to generate speech.
+
+  Returns `true` if the model has finished loading, `false` otherwise.
+
+  ## Examples
+
+      {:ok, pid} = Chatterbex.start_link(model: :turbo)
+      Chatterbex.ready?(pid)  # => false (still loading)
+      # ... wait ...
+      Chatterbex.ready?(pid)  # => true
+
+  """
+  @spec ready?(GenServer.server()) :: boolean()
+  def ready?(server) do
+    case :sys.get_state(server) do
+      %{status: :ready} -> true
+      _ -> false
+    end
+  catch
+    :exit, _ -> false
+  end
+
+  @doc """
+  Waits for the model server to be ready.
+
+  Model loading can take 30-60 seconds on first run (downloads weights).
+  Subsequent starts are faster as weights are cached.
+
+  ## Options
+
+    * `:timeout` - Maximum time to wait in milliseconds. Default: 5 minutes
+    * `:poll_interval` - How often to check status in milliseconds. Default: 100ms
+
+  ## Examples
+
+      {:ok, pid} = Chatterbex.start_link(model: :turbo)
+      :ok = Chatterbex.await_ready(pid)
+      {:ok, audio} = Chatterbex.generate(pid, "Hello!")
+
+      # With custom timeout
+      :ok = Chatterbex.await_ready(pid, timeout: :timer.minutes(10))
+
+  """
+  @spec await_ready(GenServer.server(), keyword()) :: :ok | {:error, :timeout | :stopped}
+  def await_ready(server, opts \\ []) do
+    timeout = Keyword.get(opts, :timeout, :timer.minutes(5))
+    poll_interval = Keyword.get(opts, :poll_interval, 100)
+    deadline = System.monotonic_time(:millisecond) + timeout
+
+    do_await_ready(server, poll_interval, deadline)
+  end
+
+  defp do_await_ready(server, poll_interval, deadline) do
+    cond do
+      System.monotonic_time(:millisecond) > deadline ->
+        {:error, :timeout}
+
+      not Process.alive?(server) ->
+        {:error, :stopped}
+
+      ready?(server) ->
+        :ok
+
+      true ->
+        Process.sleep(poll_interval)
+        do_await_ready(server, poll_interval, deadline)
+    end
+  end
 
   @doc """
   Stops a running model server.

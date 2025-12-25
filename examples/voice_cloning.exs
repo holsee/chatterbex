@@ -61,6 +61,9 @@ defmodule VoiceCloning do
     IO.puts("Starting Chatterbex with english model on #{device}...")
     {:ok, pid} = Chatterbex.start_link(model: :english, device: device)
 
+    IO.puts("Loading model (this may take a minute on first run)...")
+    :ok = Chatterbex.await_ready(pid)
+
     IO.puts("Cloning voice from: #{reference}")
     IO.puts("Generating speech: \"#{text}\"")
 

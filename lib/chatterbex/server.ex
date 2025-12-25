@@ -12,7 +12,7 @@ defmodule Chatterbex.Server do
 
   @default_timeout :timer.minutes(5)
 
-  defstruct [:port, :model, :device, :pending, :buffer]
+  defstruct [:port, :model, :device, :pending, :buffer, :status]
 
   # Client API
 
@@ -43,21 +43,46 @@ defmodule Chatterbex.Server do
       model: model,
       device: device,
       pending: nil,
-      buffer: ""
+      buffer: "",
+      status: :starting
     }
 
+    {:ok, state, {:continue, :start_port}}
+  end
+
+  @impl true
+  def handle_continue(:start_port, state) do
     case start_port(state) do
       {:ok, port} ->
         state = %{state | port: port}
-
-        case init_model(state) do
-          :ok -> {:ok, state}
-          {:error, reason} -> {:stop, reason}
-        end
+        {:noreply, state, {:continue, :init_model}}
 
       {:error, reason} ->
-        {:stop, reason}
+        {:stop, reason, state}
     end
+  end
+
+  @impl true
+  def handle_continue(:init_model, state) do
+    request = %{
+      "type" => "init",
+      "model" => model_name(state.model),
+      "device" => state.device
+    }
+
+    case send_request(state.port, request) do
+      :ok ->
+        {:noreply, %{state | status: :initializing}}
+
+      {:error, reason} ->
+        {:stop, reason, state}
+    end
+  end
+
+  @impl true
+  def handle_call({:generate, _text, _opts}, _from, %{status: status} = state)
+      when status != :ready do
+    {:reply, {:error, :not_ready}, state}
   end
 
   @impl true
@@ -70,6 +95,26 @@ defmodule Chatterbex.Server do
 
       {:error, reason} ->
         {:reply, {:error, reason}, state}
+    end
+  end
+
+  @impl true
+  def handle_info({port, {:data, {:eol, line}}}, %{port: port, status: :initializing} = state) do
+    # During initialization, skip non-JSON lines (progress bars, warnings, etc.)
+    data = state.buffer <> line
+
+    case parse_response(data) do
+      {:ok, %{"status" => "ok"}, _} ->
+        Logger.info("Chatterbex model #{state.model} initialized successfully")
+        {:noreply, %{state | buffer: "", status: :ready}}
+
+      {:ok, %{"status" => "error", "error" => error}, _} ->
+        Logger.error("Chatterbex model init failed: #{error}")
+        {:stop, {:init_error, error}, state}
+
+      _ ->
+        # Not valid JSON - skip this line (progress bar, warning, etc.)
+        {:noreply, %{state | buffer: ""}}
     end
   end
 
@@ -149,41 +194,6 @@ defmodule Chatterbex.Server do
     [
       {~c"PYTHONUNBUFFERED", ~c"1"}
     ]
-  end
-
-  defp init_model(state) do
-    request = %{
-      "type" => "init",
-      "model" => model_name(state.model),
-      "device" => state.device
-    }
-
-    case send_request(state.port, request) do
-      :ok ->
-        wait_for_init_response(state.port, "")
-
-      {:error, reason} ->
-        {:error, reason}
-    end
-  end
-
-  defp wait_for_init_response(port, buffer) do
-    receive do
-      {^port, {:data, {:eol, line}}} ->
-        data = buffer <> line
-
-        case parse_response(data) do
-          {:ok, %{"status" => "ok"}, _} -> :ok
-          {:ok, %{"status" => "error", "error" => error}, _} -> {:error, error}
-          _ -> {:error, :init_failed}
-        end
-
-      {^port, {:data, {:noeol, partial}}} ->
-        wait_for_init_response(port, buffer <> partial)
-    after
-      :timer.minutes(5) ->
-        {:error, :init_timeout}
-    end
   end
 
   defp model_name(:turbo), do: "turbo"

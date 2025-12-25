@@ -66,6 +66,9 @@ defmodule Multilingual do
     IO.puts("Starting Chatterbex with multilingual model on #{device}...")
     {:ok, pid} = Chatterbex.start_link(model: :multilingual, device: device)
 
+    IO.puts("Loading model (this may take a minute on first run)...")
+    :ok = Chatterbex.await_ready(pid)
+
     IO.puts("Language: #{language}")
     IO.puts("Generating speech: \"#{text}\"")
 
