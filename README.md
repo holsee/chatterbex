@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="chatterbex_logo.png" alt="Chatterbex Logo" width="400">
+</p>
+
 # Chatterbex
 
 Elixir wrapper for [Chatterbox TTS](https://github.com/resemble-ai/chatterbox) - state-of-the-art text-to-speech models from Resemble AI.
