@@ -19,6 +19,38 @@ except ImportError as e:
     print(json.dumps({"status": "error", "error": f"Missing dependency: {e}"}))
     sys.exit(1)
 
+# Monkey patch torch.load to handle CUDA->CPU/MPS device mapping
+# This is needed because Chatterbox models are saved with CUDA references
+_original_torch_load = torch.load
+
+
+def _patched_torch_load(f, map_location=None, **kwargs):
+    """Patched torch.load that maps CUDA tensors to CPU for compatibility."""
+    if map_location is None:
+        map_location = "cpu"
+    return _original_torch_load(f, map_location=map_location, **kwargs)
+
+
+torch.load = _patched_torch_load
+
+
+def _detect_device(requested_device: str) -> str:
+    """
+    Detect and validate the compute device.
+
+    Returns the best available device, with fallback handling for MPS.
+    """
+    if requested_device == "cuda":
+        if torch.cuda.is_available():
+            return "cuda"
+        return "cpu"
+    elif requested_device == "mps":
+        if torch.backends.mps.is_available():
+            return "mps"
+        return "cpu"
+    else:
+        return "cpu"
+
 
 class ChatterboxBridge:
     """Bridge between Elixir and Chatterbox TTS models."""
@@ -31,28 +63,63 @@ class ChatterboxBridge:
     def init_model(self, model_type: str, device: str = "cuda") -> dict:
         """Initialize the specified Chatterbox model."""
         try:
-            self.device = device
+            # Validate and detect actual device
+            actual_device = _detect_device(device)
+            self.device = actual_device
             self.model_type = model_type
+
+            # For MPS, load to CPU first then move components
+            # This avoids "Placeholder storage has not been allocated on MPS device" errors
+            load_device = "cpu" if actual_device == "mps" else actual_device
 
             if model_type == "turbo":
                 from chatterbox.tts_turbo import ChatterboxTurboTTS
-                self.model = ChatterboxTurboTTS.from_pretrained(device=device)
+                self.model = ChatterboxTurboTTS.from_pretrained(device=load_device)
 
             elif model_type == "english":
                 from chatterbox.tts import ChatterboxTTS
-                self.model = ChatterboxTTS.from_pretrained(device=device)
+                self.model = ChatterboxTTS.from_pretrained(device=load_device)
 
             elif model_type == "multilingual":
                 from chatterbox.mtl_tts import ChatterboxMultilingualTTS
-                self.model = ChatterboxMultilingualTTS.from_pretrained(device=device)
+                self.model = ChatterboxMultilingualTTS.from_pretrained(device=load_device)
 
             else:
                 return {"status": "error", "error": f"Unknown model type: {model_type}"}
 
-            return {"status": "ok"}
+            # Move model components to MPS if requested
+            if actual_device == "mps" and load_device == "cpu":
+                self._move_to_mps()
+
+            return {"status": "ok", "device": actual_device}
 
         except Exception as e:
             return {"status": "error", "error": str(e)}
+
+    def _move_to_mps(self) -> None:
+        """
+        Move model components to MPS device.
+
+        Chatterbox models have multiple subcomponents that need to be moved individually.
+        If MPS fails for any component, fall back to CPU for stability.
+        """
+        try:
+            # Common components across model types
+            for component_name in ["t3", "s3gen", "ve", "model"]:
+                if hasattr(self.model, component_name):
+                    component = getattr(self.model, component_name)
+                    if component is not None and hasattr(component, "to"):
+                        setattr(self.model, component_name, component.to("mps"))
+
+            # Update model's device reference if it has one
+            if hasattr(self.model, "device"):
+                self.model.device = "mps"
+
+        except Exception:
+            # MPS failed, fall back to CPU
+            self.device = "cpu"
+            if hasattr(self.model, "device"):
+                self.model.device = "cpu"
 
     def generate(self, text: str, **kwargs) -> dict:
         """Generate speech from text."""

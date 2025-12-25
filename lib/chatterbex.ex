@@ -49,13 +49,17 @@ defmodule Chatterbex do
   ## Options
 
     * `:model` - The model variant to use (`:turbo`, `:english`, `:multilingual`). Default: `:turbo`
-    * `:device` - The device to use (`"cuda"`, `"cpu"`). Default: `"cuda"`
+    * `:device` - The device to use (`"cuda"`, `"cpu"`, `"mps"`). Default: `"cuda"`
     * `:name` - Optional name for the GenServer
+
+  The `"mps"` device enables Metal Performance Shaders acceleration on Apple Silicon
+  Macs (M1/M2/M3/M4). If MPS is unavailable, it falls back to CPU automatically.
 
   ## Examples
 
       {:ok, pid} = Chatterbex.start_link(model: :turbo)
       {:ok, pid} = Chatterbex.start_link(model: :multilingual, device: "cpu")
+      {:ok, pid} = Chatterbex.start_link(model: :turbo, device: "mps")
 
   """
   @spec start_link(keyword()) :: GenServer.on_start()

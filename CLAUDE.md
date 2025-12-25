@@ -15,6 +15,7 @@ mix deps.get
 # Install Python dependencies (pick one)
 mix chatterbex.setup --cpu     # CPU-only
 mix chatterbex.setup --cuda    # CUDA-enabled
+mix chatterbex.setup --mps     # Apple Silicon (M1/M2/M3/M4)
 
 # Run tests
 mix test
@@ -76,3 +77,4 @@ Architectural decisions are documented in `docs/adr/`:
 - ADR-0002: GenServer per model instance
 - ADR-0003: JSON with Base64 for IPC protocol
 - ADR-0004: Mix task for Python setup
+- ADR-0005: Apple Silicon MPS support

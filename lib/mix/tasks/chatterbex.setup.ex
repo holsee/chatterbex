@@ -11,11 +11,13 @@ defmodule Mix.Tasks.Chatterbex.Setup do
 
       mix chatterbex.setup --cpu
       mix chatterbex.setup --cuda
+      mix chatterbex.setup --mps
 
   ## Options
 
     * `--cpu` - Install CPU-only version of PyTorch (smaller download, no GPU required)
     * `--cuda` - Install CUDA-enabled version of PyTorch (requires NVIDIA GPU)
+    * `--mps` - Install PyTorch with MPS support for Apple Silicon (M1/M2/M3/M4 Macs)
     * `--venv PATH` - Create and use a virtual environment at PATH
     * `--pip PATH` - Use a specific pip executable
 
@@ -27,8 +29,11 @@ defmodule Mix.Tasks.Chatterbex.Setup do
       # CUDA-enabled (requires NVIDIA GPU)
       mix chatterbex.setup --cuda
 
-      # Use a virtual environment with CPU
-      mix chatterbex.setup --cpu --venv .venv
+      # Apple Silicon with MPS acceleration
+      mix chatterbex.setup --mps
+
+      # Use a virtual environment with MPS
+      mix chatterbex.setup --mps --venv .venv
 
   """
 
@@ -41,6 +46,7 @@ defmodule Mix.Tasks.Chatterbex.Setup do
   @switches [
     cpu: :boolean,
     cuda: :boolean,
+    mps: :boolean,
     venv: :string,
     pip: :string
   ]
@@ -59,20 +65,35 @@ defmodule Mix.Tasks.Chatterbex.Setup do
   end
 
   defp validate_compute_option(opts) do
-    case {opts[:cpu], opts[:cuda]} do
-      {true, true} ->
-        {:error, "Cannot specify both --cpu and --cuda"}
+    selected = Enum.filter([:cpu, :cuda, :mps], &opts[&1])
 
-      {nil, nil} ->
-        {:error, "Must specify either --cpu or --cuda\n\n  mix chatterbex.setup --cpu   # CPU-only\n  mix chatterbex.setup --cuda  # CUDA-enabled"}
+    case selected do
+      [] ->
+        {:error,
+         """
+         Must specify a compute option:
+
+           mix chatterbex.setup --cpu   # CPU-only
+           mix chatterbex.setup --cuda  # CUDA-enabled (NVIDIA GPU)
+           mix chatterbex.setup --mps   # Apple Silicon (M1/M2/M3/M4)
+         """}
+
+      [_] ->
+        :ok
 
       _ ->
-        :ok
+        {:error, "Cannot specify multiple compute options (--cpu, --cuda, --mps)"}
     end
   end
 
   defp run_setup(opts) do
-    compute = if opts[:cuda], do: "CUDA", else: "CPU"
+    compute =
+      cond do
+        opts[:cuda] -> "CUDA"
+        opts[:mps] -> "MPS (Apple Silicon)"
+        true -> "CPU"
+      end
+
     Mix.shell().info("Setting up Chatterbex Python dependencies (#{compute})...")
 
     pip = determine_pip(opts)
@@ -142,7 +163,8 @@ defmodule Mix.Tasks.Chatterbex.Setup do
         if version_supported?(version) do
           :ok
         else
-          {:error, "Python 3.10 or 3.11 is required (3.12+ is not supported due to numpy compatibility issues with chatterbox-tts). Found: #{version}"}
+          {:error,
+           "Python 3.10 or 3.11 is required (3.12+ is not supported due to numpy compatibility issues with chatterbox-tts). Found: #{version}"}
         end
 
       {_, _} ->
@@ -188,13 +210,22 @@ defmodule Mix.Tasks.Chatterbex.Setup do
     cond do
       opts[:cpu] ->
         # CPU-only: install PyTorch CPU version first
-        cpu_torch = {"torch (CPU)", ["torch", "torchaudio", "--index-url", "https://download.pytorch.org/whl/cpu"]}
+        cpu_torch =
+          {"torch (CPU)",
+           ["torch", "torchaudio", "--index-url", "https://download.pytorch.org/whl/cpu"]}
+
         [cpu_torch | base_packages]
 
       opts[:cuda] ->
         # CUDA: install PyTorch with CUDA support first
         cuda_torch = {"torch (CUDA)", ["torch", "torchaudio"]}
         [cuda_torch | base_packages]
+
+      opts[:mps] ->
+        # MPS (Apple Silicon): install default PyTorch which includes MPS support on macOS
+        # PyTorch 2.0+ automatically supports MPS on Apple Silicon
+        mps_torch = {"torch (MPS)", ["torch", "torchaudio"]}
+        [mps_torch | base_packages]
     end
   end
 
