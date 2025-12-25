@@ -44,3 +44,6 @@ __pycache__/
 .env
 .venv
 venv/
+
+# dev tools
+.claude/

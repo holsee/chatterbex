@@ -74,17 +74,25 @@ defmodule Chatterbex.Server do
   end
 
   @impl true
-  def handle_info({port, {:data, data}}, %{port: port} = state) do
-    buffer = state.buffer <> data
+  def handle_info({port, {:data, {:eol, line}}}, %{port: port} = state) do
+    # Complete line received - parse it
+    data = state.buffer <> line
 
-    case parse_response(buffer) do
-      {:ok, response, rest} ->
-        state = %{state | buffer: rest}
+    case parse_response(data) do
+      {:ok, response, _rest} ->
+        state = %{state | buffer: ""}
         handle_response(response, state)
 
       :incomplete ->
-        {:noreply, %{state | buffer: buffer}}
+        # Shouldn't happen with complete lines, but handle gracefully
+        {:noreply, %{state | buffer: ""}}
     end
+  end
+
+  @impl true
+  def handle_info({port, {:data, {:noeol, partial}}}, %{port: port} = state) do
+    # Partial line - buffer it
+    {:noreply, %{state | buffer: state.buffer <> partial}}
   end
 
   @impl true
@@ -152,20 +160,29 @@ defmodule Chatterbex.Server do
 
     case send_request(state.port, request) do
       :ok ->
-        receive do
-          {port, {:data, data}} when port == state.port ->
-            case parse_response(data) do
-              {:ok, %{"status" => "ok"}, _} -> :ok
-              {:ok, %{"status" => "error", "error" => error}, _} -> {:error, error}
-              _ -> {:error, :init_failed}
-            end
-        after
-          :timer.minutes(5) ->
-            {:error, :init_timeout}
-        end
+        wait_for_init_response(state.port, "")
 
       {:error, reason} ->
         {:error, reason}
+    end
+  end
+
+  defp wait_for_init_response(port, buffer) do
+    receive do
+      {^port, {:data, {:eol, line}}} ->
+        data = buffer <> line
+
+        case parse_response(data) do
+          {:ok, %{"status" => "ok"}, _} -> :ok
+          {:ok, %{"status" => "error", "error" => error}, _} -> {:error, error}
+          _ -> {:error, :init_failed}
+        end
+
+      {^port, {:data, {:noeol, partial}}} ->
+        wait_for_init_response(port, buffer <> partial)
+    after
+      :timer.minutes(5) ->
+        {:error, :init_timeout}
     end
   end
 

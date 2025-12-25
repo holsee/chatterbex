@@ -2,6 +2,11 @@ defmodule Mix.Tasks.Chatterbex.Setup do
   @moduledoc """
   Installs Python dependencies required for Chatterbex.
 
+  ## Requirements
+
+  **Python 3.10 or 3.11 is required.** Python 3.12+ is not supported due to
+  numpy compatibility issues with the chatterbox-tts package.
+
   ## Usage
 
       mix chatterbex.setup --cpu
@@ -137,7 +142,7 @@ defmodule Mix.Tasks.Chatterbex.Setup do
         if version_supported?(version) do
           :ok
         else
-          {:error, "Python 3.10+ is required. Found: #{version}"}
+          {:error, "Python 3.10 or 3.11 is required (3.12+ is not supported due to numpy compatibility issues with chatterbox-tts). Found: #{version}"}
         end
 
       {_, _} ->
@@ -150,7 +155,8 @@ defmodule Mix.Tasks.Chatterbex.Setup do
       [_, major, minor] ->
         {major, _} = Integer.parse(major)
         {minor, _} = Integer.parse(minor)
-        major >= 3 and minor >= 10
+        # Python 3.10 or 3.11 only - Python 3.12+ breaks numpy <1.26 which chatterbox-tts requires
+        major == 3 and minor in [10, 11]
 
       _ ->
         false
