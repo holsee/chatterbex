@@ -18,8 +18,8 @@ Elixir wrapper for [Chatterbox TTS](https://github.com/resemble-ai/chatterbox) -
 ## Requirements
 
 - Elixir 1.14+
-- Python 3.10+
-- CUDA-compatible GPU (recommended) or CPU
+- Python 3.10 or 3.11 (3.12+ not supported)
+- CUDA GPU, Apple Silicon (MPS), or CPU
 - `chatterbox-tts` Python package
 
 ## Installation
@@ -49,14 +49,17 @@ pip install chatterbox-tts
 ### Setup Options
 
 ```bash
-# Standard installation (requires CUDA)
-mix chatterbex.setup
+# CUDA (NVIDIA GPU)
+mix chatterbex.setup --cuda
+
+# Apple Silicon (M1/M2/M3/M4)
+mix chatterbex.setup --mps
 
 # CPU-only (no GPU required, smaller download)
 mix chatterbex.setup --cpu
 
 # Use a virtual environment
-mix chatterbex.setup --venv .venv
+mix chatterbex.setup --mps --venv .venv
 ```
 
 ## Usage
@@ -112,7 +115,10 @@ Available tags: `[laugh]`, `[chuckle]`, `[cough]`, `[sigh]`, `[gasp]`, `[groan]`
 ### Model Options
 
 ```elixir
-# Use CPU instead of CUDA
+# Use Apple Silicon GPU (MPS)
+{:ok, pid} = Chatterbex.start_link(model: :turbo, device: "mps")
+
+# Use CPU instead of GPU
 {:ok, pid} = Chatterbex.start_link(model: :english, device: "cpu")
 
 # English model with exaggeration control
@@ -137,7 +143,7 @@ Available tags: `[laugh]`, `[chuckle]`, `[cough]`, `[sigh]`, `[gasp]`, `[groan]`
 | Option | Description | Default |
 |--------|-------------|---------|
 | `:model` | Model variant (`:turbo`, `:english`, `:multilingual`) | `:turbo` |
-| `:device` | Compute device (`"cuda"`, `"cpu"`) | `"cuda"` |
+| `:device` | Compute device (`"cuda"`, `"mps"`, `"cpu"`) | `"cuda"` |
 | `:name` | GenServer name | `nil` |
 
 ## Generation Options
@@ -164,6 +170,25 @@ Chatterbex uses Erlang ports to communicate with a Python process running the Ch
 │             │ ◀──────────────────  │                 │
 └─────────────┘   Base64 WAV/stdout  └─────────────────┘
 ```
+
+## Examples
+
+See the [`examples/`](examples/) directory for runnable scripts:
+
+- **[hello_world.exs](examples/hello_world.exs)** - Basic text-to-speech
+- **[voice_cloning.exs](examples/voice_cloning.exs)** - Clone a voice from reference audio
+- **[multilingual.exs](examples/multilingual.exs)** - Generate speech in 23+ languages
+
+```bash
+mix run examples/hello_world.exs --text "Hello!" --device mps
+mix run examples/voice_cloning.exs --reference voice.wav
+mix run examples/multilingual.exs --text "Bonjour!" --language fr
+```
+
+## Documentation
+
+- [Examples README](examples/README.md) - Detailed usage for all examples
+- [Architecture Decision Records](docs/adr/) - Design decisions and rationale
 
 ## License
 
