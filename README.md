@@ -2,6 +2,13 @@
   <img src="chatterbex_logo_text.png" alt="Chatterbex Logo" width="400">
 </p>
 
+<p align="center">
+  <a href="https://github.com/holsee/chatterbex/actions/workflows/ci.yml"><img src="https://github.com/holsee/chatterbex/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
+  <a href="https://hex.pm/packages/chatterbex"><img src="https://img.shields.io/hexpm/v/chatterbex.svg" alt="Hex.pm"></a>
+  <a href="https://hexdocs.pm/chatterbex"><img src="https://img.shields.io/badge/hex-docs-blue.svg" alt="Documentation"></a>
+  <a href="https://github.com/holsee/chatterbex/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="License"></a>
+</p>
+
 # Chatterbex
 
 Elixir wrapper for [Chatterbox TTS](https://github.com/resemble-ai/chatterbox) - state-of-the-art text-to-speech models from Resemble AI.
