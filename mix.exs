@@ -49,7 +49,8 @@ defmodule Chatterbex.MixProject do
       links: %{
         "GitHub" => @source_url,
         "Chatterbox" => "https://github.com/resemble-ai/chatterbox"
-      }
+      },
+      files: ~w(lib priv .formatter.exs mix.exs README.md LICENSE CHANGELOG.md)
     ]
   end
 
@@ -67,7 +68,8 @@ defmodule Chatterbex.MixProject do
         "docs/adr/0002-genserver-per-model-instance.md",
         "docs/adr/0003-json-base64-ipc-protocol.md",
         "docs/adr/0004-mix-task-for-python-setup.md",
-        "docs/adr/0005-apple-silicon-mps-support.md"
+        "docs/adr/0005-apple-silicon-mps-support.md",
+        "docs/adr/0006-native-elixir-model-execution.md"
       ],
       groups_for_extras: [
         Examples: ~r/examples\//,
