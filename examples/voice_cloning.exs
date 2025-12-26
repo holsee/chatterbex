@@ -5,6 +5,7 @@
 # Usage:
 #   mix run examples/voice_cloning.exs --reference path/to/voice.wav
 #   mix run examples/voice_cloning.exs --reference voice.wav --text "Clone this!"
+#   mix run examples/voice_cloning.exs --reference voice.wav --model turbo
 #   mix run examples/voice_cloning.exs --reference voice.wav --output cloned.wav
 #
 # Tips:
@@ -13,7 +14,7 @@
 #   - Background noise in reference will affect output quality
 #
 
-Mix.install([{:chatterbex, path: Path.expand("..", __DIR__)}])
+#Mix.install([{:chatterbex, path: Path.expand("..", __DIR__)}])
 
 defmodule VoiceCloning do
   def main(args) do
@@ -24,6 +25,7 @@ defmodule VoiceCloning do
           text: :string,
           output: :string,
           device: :string,
+          model: :string,
           exaggeration: :float
         ]
       )
@@ -42,6 +44,8 @@ defmodule VoiceCloning do
         --text        Text to synthesize (default: sample text)
         --output      Output file path (default: cloned_voice.wav)
         --device      Device to use: cpu, cuda, mps (default: cpu)
+        --model       Model to use: turbo, english, multilingual (default: english)
+        --cfg_weight   Classifier-Free Guidance weight (default: 0)
         --exaggeration  Voice exaggeration 0.0-1.0 (default: 0.5)
       """)
 
@@ -56,10 +60,12 @@ defmodule VoiceCloning do
     text = Keyword.get(opts, :text, "This is my cloned voice. Pretty cool, right?")
     output = Keyword.get(opts, :output, "cloned_voice.wav")
     device = Keyword.get(opts, :device, "cpu")
+    model = Keyword.get(opts, :model, "english") |> String.to_atom()
     exaggeration = Keyword.get(opts, :exaggeration, 0.5)
+    cfg_weight = Keyword.get(opts, :cfg_weight, 0)
 
-    IO.puts("Starting Chatterbex with english model on #{device}...")
-    {:ok, pid} = Chatterbex.start_link(model: :english, device: device)
+    IO.puts("Starting Chatterbex with #{model} model on #{device}...")
+    {:ok, pid} = Chatterbex.start_link(model: model, device: device)
 
     IO.puts("Loading model (this may take a minute on first run)...")
     :ok = Chatterbex.await_ready(pid)
@@ -70,7 +76,8 @@ defmodule VoiceCloning do
     {:ok, audio} =
       Chatterbex.generate(pid, text,
         audio_prompt: reference,
-        exaggeration: exaggeration
+        exaggeration: exaggeration,
+        cfg_weight: cfg_weight
       )
 
     IO.puts("Saving audio to #{output}")

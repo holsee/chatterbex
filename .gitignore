@@ -34,6 +34,7 @@ chatterbex-*.tar
 # OS
 .DS_Store
 Thumbs.db
+*:Zone.Identifier
 
 # Python
 __pycache__/

@@ -9,7 +9,7 @@
 #   mix run examples/hello_world.exs --device mps
 #
 
-Mix.install([{:chatterbex, path: Path.expand("..", __DIR__)}])
+#Mix.install([{:chatterbex, path: Path.expand("..", __DIR__)}])
 
 defmodule HelloWorld do
   def main(args) do
