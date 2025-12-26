@@ -180,9 +180,9 @@ See the [examples](examples/README.md) directory for runnable scripts:
 - **[multilingual.exs](examples/multilingual.exs)** - Generate speech in 23+ languages
 
 ```bash
-mix run examples/hello_world.exs --text "Hello!" --device mps
+mix run examples/hello_world.exs --text "Hello" --device mps
 mix run examples/voice_cloning.exs --reference voice.wav
-mix run examples/multilingual.exs --text "Bonjour!" --language fr
+mix run examples/multilingual.exs --text "Bonjour" --language fr
 ```
 
 ## Documentation
