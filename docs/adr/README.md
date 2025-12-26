@@ -14,6 +14,8 @@ An ADR is a document that captures an important architectural decision made alon
 | [ADR-0002](0002-genserver-per-model-instance.md) | GenServer Per Model Instance | Accepted | 2024-12-25 |
 | [ADR-0003](0003-json-base64-ipc-protocol.md) | JSON with Base64 for IPC Protocol | Accepted | 2024-12-25 |
 | [ADR-0004](0004-mix-task-for-python-setup.md) | Mix Task for Python Dependency Setup | Accepted | 2024-12-25 |
+| [ADR-0005](0005-apple-silicon-mps-support.md) | Apple Silicon MPS Support | Accepted | 2024-12-25 |
+| [ADR-0006](0006-native-elixir-model-execution.md) | Native Elixir Model Execution | Proposed | 2025-12-26 |
 
 ## ADR Template
 
