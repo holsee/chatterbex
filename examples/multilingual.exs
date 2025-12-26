@@ -3,7 +3,7 @@
 # Multilingual - Text-to-speech in 23+ languages
 #
 # Usage:
-#   mix run examples/multilingual.exs --text "Bonjour!" --language fr
+#   mix run examples/multilingual.exs --text "Bonjour" --language fr
 #   mix run examples/multilingual.exs --text "Guten Tag" --language de --output german.wav
 #   mix run examples/multilingual.exs --list-languages
 #
@@ -16,7 +16,7 @@
 #   ko (Korean), vi (Vietnamese), th (Thai), id (Indonesian), ms (Malay)
 #
 
-Mix.install([{:chatterbex, path: Path.expand("..", __DIR__)}])
+#Mix.install([{:chatterbex, path: Path.expand("..", __DIR__)}])
 
 defmodule Multilingual do
   @sample_texts %{

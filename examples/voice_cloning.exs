@@ -45,7 +45,7 @@ defmodule VoiceCloning do
         --output      Output file path (default: cloned_voice.wav)
         --device      Device to use: cpu, cuda, mps (default: cpu)
         --model       Model to use: turbo, english, multilingual (default: english)
-        --cfg_weight   Classifier-Free Guidance weight (default: 0)
+        --cfg_weight   Classifier-Free Guidance weight (default: 0.5)
         --exaggeration  Voice exaggeration 0.0-1.0 (default: 0.5)
       """)
 
@@ -62,7 +62,7 @@ defmodule VoiceCloning do
     device = Keyword.get(opts, :device, "cpu")
     model = Keyword.get(opts, :model, "english") |> String.to_atom()
     exaggeration = Keyword.get(opts, :exaggeration, 0.5)
-    cfg_weight = Keyword.get(opts, :cfg_weight, 0)
+    cfg_weight = Keyword.get(opts, :cfg_weight, 0.5)
 
     IO.puts("Starting Chatterbex with #{model} model on #{device}...")
     {:ok, pid} = Chatterbex.start_link(model: model, device: device)

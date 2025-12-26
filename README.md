@@ -163,12 +163,12 @@ The multilingual model supports: English, French, German, Spanish, Italian, Port
 
 Chatterbex uses Erlang ports to communicate with a Python process running the Chatterbox models. Each `Chatterbex.start_link/1` call spawns a dedicated Python process with the loaded model, allowing multiple models or instances to run concurrently.
 
-```
-┌─────────────┐      JSON/stdin      ┌─────────────────┐
-│   Elixir    │ ──────────────────▶  │     Python      │
-│  GenServer  │                      │  Chatterbox TTS │
-│             │ ◀──────────────────  │                 │
-└─────────────┘   Base64 WAV/stdout  └─────────────────┘
+```text
++---------------+      JSON/stdin       +-----------------+
+|    Elixir     | --------------------> |     Python      |
+|   GenServer   |                       | Chatterbox TTS  |
+|               | <-------------------- |                 |
++---------------+    Base64 WAV/stdout  +-----------------+
 ```
 
 ## Examples

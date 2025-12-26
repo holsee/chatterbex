@@ -29,12 +29,12 @@ The architecture:
 - Communication happens via stdin/stdout with JSON messages
 - The Port is opened with `:exit_status` to detect Python crashes
 
-```
-┌─────────────┐      stdin (JSON)      ┌─────────────────┐
-│   Elixir    │ ─────────────────────▶ │     Python      │
-│  GenServer  │                        │  chatterbex_    │
-│             │ ◀───────────────────── │  bridge.py      │
-└─────────────┘     stdout (JSON)      └─────────────────┘
+```text
++---------------+      stdin (JSON)      +------------------+
+|    Elixir     | ---------------------> |      Python      |
+|   GenServer   |                        |  chatterbex_     |
+|               | <--------------------- |  bridge.py       |
++---------------+      stdout (JSON)     +------------------+
 ```
 
 ## Consequences

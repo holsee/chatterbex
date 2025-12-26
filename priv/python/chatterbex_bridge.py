@@ -10,6 +10,10 @@ import sys
 import json
 import base64
 import io
+import os
+
+# Force eager attention to avoid SDPA compatibility issues with output_attentions
+os.environ["ATTN_IMPLEMENTATION"] = "eager"
 
 # Attempt to import torch and torchaudio early to catch missing deps
 try:
@@ -83,6 +87,8 @@ class ChatterboxBridge:
             elif model_type == "multilingual":
                 from chatterbox.mtl_tts import ChatterboxMultilingualTTS
                 self.model = ChatterboxMultilingualTTS.from_pretrained(device=load_device)
+                # Fix SDPA attention compatibility issue with output_attentions
+                self._fix_attention_implementation()
 
             else:
                 return {"status": "error", "error": f"Unknown model type: {model_type}"}
@@ -120,6 +126,39 @@ class ChatterboxBridge:
             self.device = "cpu"
             if hasattr(self.model, "device"):
                 self.model.device = "cpu"
+
+    def _fix_attention_implementation(self) -> None:
+        """
+        Fix SDPA attention compatibility issues.
+
+        Some transformer components use SDPA which doesn't support output_attentions.
+        This patches them to use eager attention instead.
+        """
+        try:
+            # Check common component names that might have transformer layers
+            for component_name in ["t3", "model", "encoder", "decoder"]:
+                if hasattr(self.model, component_name):
+                    component = getattr(self.model, component_name)
+                    if component is not None:
+                        # Recursively find and fix attention implementation
+                        self._set_eager_attention(component)
+        except Exception:
+            pass  # Best effort - if it fails, generation will show the original error
+
+    def _set_eager_attention(self, module) -> None:
+        """Recursively set attention implementation to eager on transformer modules."""
+        if hasattr(module, "config") and hasattr(module.config, "_attn_implementation"):
+            module.config._attn_implementation = "eager"
+        if hasattr(module, "_attn_implementation"):
+            module._attn_implementation = "eager"
+        # Recurse into submodules
+        if hasattr(module, "modules"):
+            for submodule in module.modules():
+                if submodule is not module:
+                    if hasattr(submodule, "config") and hasattr(submodule.config, "_attn_implementation"):
+                        submodule.config._attn_implementation = "eager"
+                    if hasattr(submodule, "_attn_implementation"):
+                        submodule._attn_implementation = "eager"
 
     def generate(self, text: str, **kwargs) -> dict:
         """Generate speech from text."""
