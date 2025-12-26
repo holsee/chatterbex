@@ -55,9 +55,10 @@ defmodule Mix.Tasks.Chatterbex.Setup do
   def run(args) do
     {opts, _, _} = OptionParser.parse(args, switches: @switches)
 
-    with :ok <- validate_compute_option(opts) do
-      run_setup(opts)
-    else
+    case validate_compute_option(opts) do
+      :ok ->
+        run_setup(opts)
+
       {:error, message} ->
         Mix.shell().error(message)
         exit({:shutdown, 1})
@@ -125,26 +126,31 @@ defmodule Mix.Tasks.Chatterbex.Setup do
 
   defp maybe_create_venv(opts) do
     case opts[:venv] do
-      nil ->
+      nil -> :ok
+      venv_path -> ensure_venv_exists(venv_path)
+    end
+  end
+
+  defp ensure_venv_exists(venv_path) do
+    if File.exists?(venv_path) do
+      Mix.shell().info("Using existing virtual environment at #{venv_path}")
+      :ok
+    else
+      create_venv(venv_path)
+    end
+  end
+
+  defp create_venv(venv_path) do
+    Mix.shell().info("Creating virtual environment at #{venv_path}...")
+    python = System.find_executable("python3") || System.find_executable("python")
+
+    case System.cmd(python, ["-m", "venv", venv_path], stderr_to_stdout: true) do
+      {_, 0} ->
+        Mix.shell().info([:green, "Virtual environment created"])
         :ok
 
-      venv_path ->
-        if File.exists?(venv_path) do
-          Mix.shell().info("Using existing virtual environment at #{venv_path}")
-          :ok
-        else
-          Mix.shell().info("Creating virtual environment at #{venv_path}...")
-          python = System.find_executable("python3") || System.find_executable("python")
-
-          case System.cmd(python, ["-m", "venv", venv_path], stderr_to_stdout: true) do
-            {_, 0} ->
-              Mix.shell().info([:green, "Virtual environment created"])
-              :ok
-
-            {output, _} ->
-              {:error, "Failed to create virtual environment: #{output}"}
-          end
-        end
+      {output, _} ->
+        {:error, "Failed to create virtual environment: #{output}"}
     end
   end
 

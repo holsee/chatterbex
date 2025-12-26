@@ -168,9 +168,7 @@ defmodule Chatterbex.Server do
   defp start_port(state) do
     python_script = python_script_path()
 
-    unless File.exists?(python_script) do
-      {:error, {:missing_python_script, python_script}}
-    else
+    if File.exists?(python_script) do
       port =
         Port.open({:spawn_executable, System.find_executable("python3")}, [
           :binary,
@@ -181,6 +179,8 @@ defmodule Chatterbex.Server do
         ])
 
       {:ok, port}
+    else
+      {:error, {:missing_python_script, python_script}}
     end
   end
 
